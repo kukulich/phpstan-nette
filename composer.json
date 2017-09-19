@@ -11,7 +11,7 @@
 	},
 	"require": {
 		"php": "~7.0",
-		"phpstan/phpstan": "^0.9",
+		"phpstan/phpstan": "dev-real-static-analysis as 0.9-dev",
 		"nette/component-model": "^2.3.0 || ^3.0.0",
 		"nette/di": "^2.3.0 || ^3.0.0",
 		"nette/forms": "^2.3.0 || ^3.0.0",
@@ -25,6 +25,12 @@
 		"satooshi/php-coveralls": "^1.0",
 		"slevomat/coding-standard": "^2.0"
 	},
+	"repositories": [
+		{
+			"type": "vcs",
+			"url": "git@github.com:kukulich/phpstan.git"
+		}
+	],
 	"autoload": {
 		"psr-4": {
   			"PHPStan\\": "src/"

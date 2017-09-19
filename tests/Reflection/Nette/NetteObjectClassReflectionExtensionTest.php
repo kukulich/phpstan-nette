@@ -56,7 +56,7 @@ class NetteObjectClassReflectionExtensionTest extends \PHPUnit\Framework\TestCas
 	 */
 	public function testHasMethod(string $className, string $method, bool $result)
 	{
-		$classReflection = $this->mockClassReflection(new \ReflectionClass($className));
+		$classReflection = $this->mockClassReflection($className);
 		$this->assertSame($result, $this->extension->hasMethod($classReflection, $method));
 	}
 
@@ -99,58 +99,64 @@ class NetteObjectClassReflectionExtensionTest extends \PHPUnit\Framework\TestCas
 	 */
 	public function testHasProperty(string $className, string $property, bool $result)
 	{
-		$classReflection = $this->mockClassReflection(new \ReflectionClass($className));
+		$classReflection = $this->mockClassReflection($className);
 		$this->assertSame($result, $this->extension->hasProperty($classReflection, $property));
 	}
 
-	private function mockClassReflection(\ReflectionClass $class): ClassReflection
+	private function mockClassReflection(string $className): ClassReflection
 	{
+		$class = \Roave\BetterReflection\Reflection\ReflectionClass::createFromName($className);
+
 		$classReflection = $this->createMock(ClassReflection::class);
-		$classReflection->method('getNativeReflection')->will($this->returnValue($class));
-		$classReflection->method('hasProperty')->will(
-			$this->returnCallback(
-				function (string $property) use ($class): bool {
-					return $class->hasProperty($property);
+		$classReflection->method('getTraitNames')->willReturn($class->getTraitNames());
+		$classReflection->method('getParentClass')->willReturnCallback(
+			function () use ($class) {
+				$parentClass = $class->getParentClass();
+				if ($parentClass === null) {
+					return null;
 				}
-			)
+
+				$parentClassReflection = $this->createMock(ClassReflection::class);
+				$parentClassReflection->method('getName')->willReturn($parentClass->getName());
+				return $parentClassReflection;
+			}
 		);
-		$classReflection->method('getProperty')->will(
-			$this->returnCallback(
-				function (string $property) use ($class): PropertyReflection {
-					return $this->mockPropertyReflection($class->getProperty($property));
-				}
-			)
+		$classReflection->method('hasExtendedProperty')->willReturnCallback(
+			function (string $property) use ($class): bool {
+				return $class->hasProperty($property);
+			}
 		);
-		$classReflection->method('hasMethod')->will(
-			$this->returnCallback(
-				function (string $method) use ($class): bool {
-					return $class->hasMethod($method);
-				}
-			)
+		$classReflection->method('getExtendedProperty')->willReturnCallback(
+			function (string $property) use ($class): PropertyReflection {
+				return $this->mockPropertyReflection($class->getProperty($property));
+			}
 		);
-		$classReflection->method('getMethod')->will(
-			$this->returnCallback(
-				function (string $method) use ($class): MethodReflection {
-					return $this->mockMethodReflection($class->getMethod($method));
-				}
-			)
+		$classReflection->method('hasExtendedMethod')->willReturnCallback(
+			function (string $method) use ($class): bool {
+				return $class->hasMethod($method);
+			}
+		);
+		$classReflection->method('getExtendedMethod')->willReturnCallback(
+			function (string $method) use ($class): MethodReflection {
+				return $this->mockMethodReflection($class->getMethod($method));
+			}
 		);
 
 		return $classReflection;
 	}
 
-	private function mockMethodReflection(\ReflectionMethod $method): MethodReflection
+	private function mockMethodReflection(\Roave\BetterReflection\Reflection\ReflectionMethod $method): MethodReflection
 	{
 		$methodReflection = $this->createMock(MethodReflection::class);
-		$methodReflection->method('isPublic')->will($this->returnValue($method->isPublic()));
-		$methodReflection->method('isStatic')->will($this->returnValue($method->isStatic()));
+		$methodReflection->method('isPublic')->willReturn($method->isPublic());
+		$methodReflection->method('isStatic')->willReturn($method->isStatic());
 		return $methodReflection;
 	}
 
-	private function mockPropertyReflection(\ReflectionProperty $property): PropertyReflection
+	private function mockPropertyReflection(\Roave\BetterReflection\Reflection\ReflectionProperty $property): PropertyReflection
 	{
 		$propertyReflection = $this->createMock(PropertyReflection::class);
-		$propertyReflection->method('isPublic')->will($this->returnValue($property->isPublic()));
+		$propertyReflection->method('isPublic')->willReturn($property->isPublic());
 		return $propertyReflection;
 	}
 

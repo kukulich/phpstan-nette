@@ -13,7 +13,7 @@ class NetteObjectClassReflectionExtension implements MethodsClassReflectionExten
 
 	public function hasProperty(ClassReflection $classReflection, string $propertyName): bool
 	{
-		if (!$this->inheritsFromNetteObject($classReflection->getNativeReflection())) {
+		if (!$this->inheritsFromNetteObject($classReflection)) {
 			return false;
 		}
 
@@ -40,11 +40,11 @@ class NetteObjectClassReflectionExtension implements MethodsClassReflectionExten
 	private function getMethodByProperty(ClassReflection $classReflection, string $propertyName)
 	{
 		$getterMethodName = sprintf('get%s', ucfirst($propertyName));
-		if (!$classReflection->hasMethod($getterMethodName)) {
+		if (!$classReflection->hasExtendedMethod($getterMethodName)) {
 			return null;
 		}
 
-		return $classReflection->getMethod($getterMethodName);
+		return $classReflection->getExtendedMethod($getterMethodName);
 	}
 
 	public function getProperty(ClassReflection $classReflection, string $propertyName): PropertyReflection
@@ -56,8 +56,8 @@ class NetteObjectClassReflectionExtension implements MethodsClassReflectionExten
 
 	public function hasMethod(ClassReflection $classReflection, string $methodName): bool
 	{
-		$traitNames = $this->getTraitNames($classReflection->getNativeReflection());
-		if (!in_array(\Nette\SmartObject::class, $traitNames, true) && !$this->inheritsFromNetteObject($classReflection->getNativeReflection())) {
+		$traitNames = $classReflection->getTraitNames();
+		if (!in_array(\Nette\SmartObject::class, $traitNames, true) && !$this->inheritsFromNetteObject($classReflection)) {
 			return false;
 		}
 
@@ -65,7 +65,7 @@ class NetteObjectClassReflectionExtension implements MethodsClassReflectionExten
 			return false;
 		}
 
-		return $classReflection->hasProperty($methodName) && $classReflection->getProperty($methodName)->isPublic();
+		return $classReflection->hasExtendedProperty($methodName) && $classReflection->getExtendedProperty($methodName)->isPublic();
 	}
 
 	public function getMethod(ClassReflection $classReflection, string $methodName): MethodReflection
@@ -73,24 +73,9 @@ class NetteObjectClassReflectionExtension implements MethodsClassReflectionExten
 		return new NetteObjectEventListenerMethodReflection($methodName, $classReflection);
 	}
 
-	/**
-	 * @param \ReflectionClass $class
-	 * @return string[]
-	 */
-	private function getTraitNames(\ReflectionClass $class): array
+	private function inheritsFromNetteObject(ClassReflection $classReflection): bool
 	{
-		$traitNames = $class->getTraitNames();
-		while ($class->getParentClass() !== false) {
-			$traitNames = array_values(array_unique(array_merge($traitNames, $class->getParentClass()->getTraitNames())));
-			$class = $class->getParentClass();
-		}
-
-		return $traitNames;
-	}
-
-	private function inheritsFromNetteObject(\ReflectionClass $class): bool
-	{
-		while (($class = $class->getParentClass()) !== false) {
+		while (($class = $classReflection->getParentClass()) !== null) {
 			if ($class->getName() === 'Nette\Object') {
 				return true;
 			}
